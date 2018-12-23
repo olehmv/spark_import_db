@@ -6,7 +6,7 @@ class JDBCParam(_driver: String,
                 _url: URL,
                 _user: User,
                 _dbInfoSchemaTable: String,
-                _tableType: List[TableType]) {
+                _tableType: List[TableType]) extends Serializable {
 
   // Getter
   def driver    = _driver

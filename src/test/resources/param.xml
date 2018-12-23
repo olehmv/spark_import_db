@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<jdbcconf dbInfoSchemaTable="INFORMATION_SCHEMA.TABLES" driver="com.microsoft.sqlserver.jdbc.SQLServerDriver">
+  <url db="AdventureWorks2012" port="1433" host="localhost"/>
+  <user password="asus" name="sa"/>
+  <tabletype> BASE TABLE </tabletype>
+</jdbcconf>

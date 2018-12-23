@@ -4,16 +4,17 @@ import java.util.Properties
 
 import com.epam.db.core.imprt.param.JDBCParam
 import com.epam.db.core.imprt.utils._
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{ SparkSession }
+import org.apache.spark.sql.functions._
 
 object ImportMSSQL {
 
   def main(args: Array[String]): Unit = {
     if (args.size < 1) {
       println(
-        "Usage: \\n" +
-        "1 - jdbc param file \\n" +
-        "2 - destination directory \\n" +
+        "Usage: \n" +
+        "1 - jdbc param file \n" +
+        "2 - destination directory \n" +
         "3 - output file format"
       )
       sys.exit(1)
@@ -25,7 +26,7 @@ object ImportMSSQL {
     val destDir = args(1)
 
     // Get output file format (parquet,csv, ect..)
-    val outputFormat=args(2)
+    val outputFormat = args(2)
 
     // Create spark session
     val spark = SparkSession
@@ -42,7 +43,7 @@ object ImportMSSQL {
 
     // Create a Properties() object to hold the parameters.
     val connectionProperties = new Properties()
-    connectionProperties.put("user", s"${param.user.user}")
+    connectionProperties.put("user", s"${param.user.name}")
     connectionProperties.put("password", s"${param.user.password}")
 
     // Build database information schema table name
@@ -52,29 +53,31 @@ object ImportMSSQL {
     // Load DB SCHEMA TABLE into DataFrame
     val dbSchemaTableDF = spark.read.jdbc(jdbcUrl, dbSchemaTable, connectionProperties)
 
-    // Column to select and filter on
-    val column1 = "TABLE_TYPE"
-
-    // Column to select
-    val column2= "TABLE_SCHEMA"
-
-    // Filter table types for extraction
-    val tablesForExraction =
-      dbSchemaTableDF
-        .select($"$column1",$"$column2")
-        .filter($"$column1" isin param.tableType)
-
-    // Build table names for extraction
+    // Select table names and filter table types for extraction
     val tableNamesForExtraction =
-      tablesForExraction
-        .map(row =>param.url.db+"."+row.getString(0)+"."+row.getString(1))
+      dbSchemaTableDF
+        .select($"TABLE_CATALOG", $"TABLE_SCHEMA", $"TABLE_NAME", $"TABLE_TYPE")
+        .filter($"TABLE_TYPE" === "BASE TABLE")
+        .withColumn("FULL_TABLE_NAME",
+                    concat($"TABLE_CATALOG", lit("."), $"TABLE_SCHEMA", lit("."), $"TABLE_NAME"))
+        .drop("TABLE_CATALOG", "TABLE_SCHEMA", "TABLE_NAME", "TABLE_TYPE")
+        .map(row => row.getString(0))
         .collect()
+        .sortWith(_ < _)
 
-    // Extract tables to DataFrame
-    val tablesDF = tableNamesForExtraction.map(table=>spark.read.jdbc(jdbcUrl,table,connectionProperties))
+    // Map tables names to extracted table DataFrame
+    val tablesDF =
+      tableNamesForExtraction
+        .map(
+          table =>
+            (table,
+             Utils
+               .truncateSpaceInStringColumns(spark.read.jdbc(jdbcUrl, table, connectionProperties)))
+        )
 
-    // Import tables to destination directory
-    tablesDF.foreach(df=>df.write.format(outputFormat).option("path",destDir))
+    // Import table's DataFrames to destination directory
+    // For each table new directory will be created
+    tablesDF.foreach(table => table._2.write.format(outputFormat).save(s"${destDir}/${table._1}"))
 
   }
 

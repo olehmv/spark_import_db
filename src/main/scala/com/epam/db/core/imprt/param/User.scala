@@ -2,17 +2,17 @@ package com.epam.db.core.imprt.param
 
 import scala.xml.{ NodeSeq }
 
-class User(_user: String, _password: String) {
+class User(_name: String, _password: String) extends Serializable {
 
   // Getter
-  def user     = _user
+  def name     = _name
   def password = _password
   // Setter
   def password_ = _password
-  def user_     = _user
+  def name_     = _name
 
   def toXML =
-    <user user={_user} password={_password}/>
+    <user name={_name} password={_password}/>
 
 }
 
@@ -20,7 +20,7 @@ object User {
 
   def fromXML(node: NodeSeq): User =
     new User(
-      _user = (node \ "@user") text,
+      _name = (node \ "@name") text,
       _password = (node \ "@password") text
     )
 

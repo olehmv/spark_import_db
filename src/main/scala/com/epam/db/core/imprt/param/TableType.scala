@@ -1,35 +1,28 @@
 package com.epam.db.core.imprt.param
 
+import org.apache.spark.sql.ColumnName
+
 import scala.xml.NodeSeq
 
-class TableType(_value: String){
+class TableType(_name: String)extends Serializable {
 
   // Getter
-  def value = _value
+  def value = _name
 
   // Setter
-  def value_ = _value
+  def value_ = _name
 
   def toXML =
     <tabletype>
-    {_value}
+    {_name}
     </tabletype>
 
-  override def toParam: TableType=
-    <tabletype>
-    {_value}
-    </tabletype>
-
-  override def fromParam(param: AnyRef): TableType =
-    new TableType(
-      _value = param.asInstanceOf[NodeSeq].text
-    )
 }
 
 object TableType {
 
   def fromXML(node: NodeSeq): TableType =
     new TableType(
-      _value = node.text
+      _name = node.text
     )
 }

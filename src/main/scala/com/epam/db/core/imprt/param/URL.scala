@@ -1,10 +1,9 @@
 package com.epam.db.core.imprt.param
 
-import com.epam.db.core.imprt.param
 
 import scala.xml.NodeSeq
 
-class URL(_host: String, _port: String, _db: String) {
+class URL(_host: String, _port: String, _db: String) extends Serializable {
 
   // Getter
   def host = _host
